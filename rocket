@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'bundler/setup'
+require 'highline/import'
+
+files = Dir.glob("*.{php,js,java,cs,xaml,h,m,swift,inc,module}")
+
+def rocket(filename)
+  puts "Reading #{filename}"
+  indents = Array.new
+  File.readlines(filename).each do |line|
+    indent = line.match("^\s*")[0].length
+    print "\u23B8".encode('utf-8') if indent == 0
+    indent.times do print "\u2588".encode('utf-8') end
+    print "\n"
+    indents.push indent
+  end
+  indents
+end
+
+def show_mode(indents)
+  modes = {}
+  indents.each do |indent|
+    modes[indent] = 0 if modes[indent] == nil
+    modes[indent] = modes[indent] + 1
+  end
+  mode = 0
+  max = 0
+  modes.each do |indent, count|
+    if count > max
+      mode = indent
+      max = count
+    end
+  end
+  say "Average (mode) indentation:".rjust(30, " ") + " #{mode}".rjust(4, " ") + " (#{max} times)"
+end
+
+def show_largest(indents)
+  largest = indents.inject do |memo, indent|
+    memo > indent ? memo : indent
+  end
+  say "Largest indent:".rjust(30, " ") + "#{largest}".rjust(4, " ")
+end
+
+def show_mean(indents)
+  say "Average (mean) indentation:".rjust(30, " ") + " #{indents.reduce(:+)/indents.length}".rjust(4, " ")
+end
+
+def show_line_count(indents)
+  say "Lines:".rjust(30, " ") + " #{indents.length}".rjust(4, " ")
+end
+
+def show_stats(indents)
+  show_line_count(indents)
+  show_mean(indents)
+  show_mode(indents)
+  show_largest(indents)
+end
+
+choose do |menu|
+  menu.prompt = "Select file to rocket"
+  files.each do |filename|
+    next if File.directory? filename
+    menu.choice filename do
+      say("You picked #{filename}")
+      indents = rocket filename
+      show_stats(indents)
+    end
+  end
+end
