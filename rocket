@@ -8,17 +8,20 @@ files = Dir.glob("*.{php,js,java,cs,xaml,h,m,swift,inc,module}")
 def rocket(filename)
   puts "Reading #{filename}"
   indents = Array.new
+  line_lengths = Array.new
   File.readlines(filename).each do |line|
     indent = line.match("^\s*")[0].length
+    line_length = line.length - indent
     print "\u23B8".encode('utf-8') if indent == 0
     indent.times do print "\u2588".encode('utf-8') end
     print "\n"
     indents.push indent
+    line_lengths.push line_length
   end
-  indents
+  [indents, line_lengths]
 end
 
-def show_mode(indents)
+def show_mode(indents, type)
   modes = {}
   indents.each do |indent|
     modes[indent] = 0 if modes[indent] == nil
@@ -32,29 +35,29 @@ def show_mode(indents)
       max = count
     end
   end
-  say "Average (mode) indentation:".rjust(30, " ") + " #{mode}".rjust(4, " ") + " (#{max} times)"
+  say "Average (mode) #{type}:".rjust(30, " ") + " #{mode}".rjust(4, " ") + " (#{max} times)"
 end
 
-def show_largest(indents)
+def show_largest(indents, type)
   largest = indents.inject do |memo, indent|
     memo > indent ? memo : indent
   end
-  say "Largest indent:".rjust(30, " ") + "#{largest}".rjust(4, " ")
+  say "Largest #{type}:".rjust(30, " ") + "#{largest}".rjust(4, " ")
 end
 
-def show_mean(indents)
-  say "Average (mean) indentation:".rjust(30, " ") + " #{indents.reduce(:+)/indents.length}".rjust(4, " ")
+def show_mean(indents, type)
+  say "Average (mean) #{type}:".rjust(30, " ") + " #{indents.reduce(:+)/indents.length}".rjust(4, " ")
 end
 
 def show_line_count(indents)
   say "Lines:".rjust(30, " ") + " #{indents.length}".rjust(4, " ")
 end
 
-def show_stats(indents)
+def show_stats(indents, type)
   show_line_count(indents)
-  show_mean(indents)
-  show_mode(indents)
-  show_largest(indents)
+  show_mean(indents, type)
+  show_mode(indents, type)
+  show_largest(indents, type)
 end
 
 choose do |menu|
@@ -63,8 +66,9 @@ choose do |menu|
     next if File.directory? filename
     menu.choice filename do
       say("You picked #{filename}")
-      indents = rocket filename
-      show_stats(indents)
+      indents, line_lengths = rocket filename
+      show_stats(indents, "indentation")
+      show_stats(line_lengths, "line length")
     end
   end
 end
